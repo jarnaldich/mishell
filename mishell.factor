@@ -39,8 +39,10 @@ SYNTAX: r| 124 parsing-raw ;
     [ <process-reader*> ] dip swap [ with-input-stream ] dip wait-for-process ; inline
 PRIVATE>
 
+
 SYMBOL: mishell-current-cfg
 TUPLE: mishell-cfg default-enc default-env ;
+
 
 : <mishell-cfg> ( -- x )
     mishell-cfg new ;
@@ -56,6 +58,6 @@ TUPLE: mishell-cfg default-enc default-env ;
       swap >>command
       +stdout+ >>stderr
       mishell-current-cfg get default-env>> >>environment
-      mishell-current-cfg get default-enc>> [ contents print ] with-process-reader/noerr ;
+      mishell-current-cfg get default-enc>> [ [ readln dup [ print ] when* ] loop ] with-process-reader/noerr ;
 
 
