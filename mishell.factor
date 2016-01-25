@@ -34,14 +34,16 @@ SYNTAX: r| 124 parsing-raw ;
 ! ------------------------------------------------------------------------------
 ! Commands 
 ! ------------------------------------------------------------------------------
-<PRIVATE
-: with-process-reader/noerr ( desc enc q -- n )
-    [ <process-reader*> ] dip swap [ with-input-stream ] dip wait-for-process ; inline
-PRIVATE>
-
-
 SYMBOL: mishell-current-cfg
 TUPLE: mishell-cfg default-enc default-env ;
+
+<PRIVATE
+: with-process-reader/noerr ( desc q -- n )
+    [ mishell-current-cfg get default-enc>> <process-reader*> ] dip
+    swap
+    [ with-input-stream ] dip
+    wait-for-process ; inline
+PRIVATE>
 
 
 : <mishell-cfg> ( -- x )
@@ -53,11 +55,17 @@ TUPLE: mishell-cfg default-enc default-env ;
 : ls ( dir -- files )
     [ directory-files ] [ [ prepend-path normalize-path ] curry ] bi map ;
 
-: >sh ( cmd -- ret-code )
+: default-process-reader ( cmd -- stream )
     <process>
-      swap >>command
-      +stdout+ >>stderr
-      mishell-current-cfg get default-env>> >>environment
-      mishell-current-cfg get default-enc>> [ [ readln dup [ print ] when* ] loop ] with-process-reader/noerr ;
+        swap >>command
+        +stdout+ >>stderr
+        mishell-current-cfg get default-env>> >>environment
+        mishell-current-cfg get default-enc>> <process-reader> ;
+
+! : each-proc-line ( proc quot -- status )
+!     '[ readln dup _ when* ]
+
+: >sh ( cmd -- ret-code )
+      [ [ readln dup [ print ] when* ] loop ] with-process-reader/noerr ;
 
 
