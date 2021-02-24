@@ -23,13 +23,6 @@ HELP: <mishell-cfg>
 }
 { $description "" } ;
 
-HELP: >sh
-{ $values
-    { "cmd" null }
-    { "ret-code" null }
-}
-{ $description "" } ;
-
 HELP: default-process-reader
 { $values
     { "cmd" null }
