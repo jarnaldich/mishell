@@ -1,12 +1,13 @@
 ! Copyright (C) 2015 Joan Arnaldich 
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors io io.backend io.directories io.encodings.utf8 io.files
+USING: accessors io io.backend io.directories io.files
 io.launcher io.pathnames kernel lexer math namespaces see sequences sorting
-vocabs io.encodings.binary strings assocs serialize ;
+vocabs io.encodings.binary io.encodings.utf8 strings assocs parser serialize 
+io.files.private ui.tools.listener ;
 IN: mishell
 
 SYMBOL: mishell-current-cfg
-TUPLE: mishell-cfg default-enc default-env ;
+TUPLE: mishell-cfg default-enc default-env session-dir ;
 
 
 ! ------------------------------------------------------------------------------
@@ -27,7 +28,7 @@ SYNTAX: r| 124 parsing-raw ;
 ! ------------------------------------------------------------------------------
 : dump-words ( vocab path -- )
     utf8 [
-        vocab-words [ name>> ] sort-with
+        vocab-words [ name>> ] sort-by
         [ "IN: scratchpad" print [ "DEFER: " write name>> print ] each nl ]
         [ [ see nl ] each ] bi
     ] with-file-writer ;
@@ -55,7 +56,16 @@ PRIVATE>
    binary [ deserialize ] with-file-reader
    [ set ] assoc-each ;
 
-    
+: save-session ( -- )    
+    mishell-current-cfg get session-dir>> 
+    [ "scratchpad.factor" append-path "scratchpad" swap dump-words ]
+    [ "vars.bin" append-path dump-vars ] bi ;
+
+: load-session ( -- )
+    mishell-current-cfg get session-dir>> 
+    [ "scratchpad.factor" append-path run-file ]
+    [ "vars.bin" append-path dump-vars ] bi ;
+
 ! Reload a new file with, eg:
 ! "~/dump.factor" parse-file
 
@@ -74,11 +84,19 @@ PRIVATE>
 : <mishell-cfg> ( -- x )
     mishell-cfg new ;
 
-: set-default-cfg ( enc env --  )
+: set-cfg ( session-path enc env --  )
     mishell-cfg boa mishell-current-cfg set ;
 
-: ls ( dir -- files )
-    [ directory-files ] [ [ prepend-path normalize-path ] curry ] bi map ;
+: set-default-cfg ( -- )
+    utf8 
+    H{ } 
+    home ".mishell/" append-path dup make-directories
+    set-cfg ;
+
+! The old version is like qualified-directory-files
+: ls ( -- files )
+    cwd directory-files ;
+!    [ directory-files ] [ [ prepend-path normalize-path ] curry ] bi map ;
 
 : default-process-reader ( cmd -- stream )
     <process>
@@ -92,9 +110,13 @@ PRIVATE>
     default-process-reader stream-lines ;
     
 ! : each-proc-line ( proc quot -- status )
-!     '[ readln dup _ when* ]
-
+!     '[ readln dup _ when* ] ;
+! 
 ! : >sh ( cmd -- ret-code )
-!       [ [ readln dup [ print ] when* ] loop ] with-process-reader/noerr ;
+! default-process-reader
+! [ [ readln dup [ print ] when* ] loop ] with-process-reader/noerr ;
 
+: cls ( -- )
+    get-listener clear-output ;
 
+STARTUP-HOOK: set-default-cfg 
