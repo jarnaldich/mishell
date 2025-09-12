@@ -3,7 +3,7 @@
 USING: accessors io io.backend io.directories io.files
 io.launcher io.pathnames kernel lexer math namespaces see sequences sorting
 vocabs io.encodings.binary io.encodings.utf8 strings assocs parser serialize 
-io.files.private ui.tools.listener ;
+io.files.private ui.tools.listener prettyprint ;
 IN: mishell
 
 SYMBOL: mishell-current-cfg
@@ -94,10 +94,6 @@ PRIVATE>
     set-cfg ;
 
 ! The old version is like qualified-directory-files
-: ls ( -- files )
-    cwd directory-files ;
-!    [ directory-files ] [ [ prepend-path normalize-path ] curry ] bi map ;
-
 : default-process-reader ( cmd -- stream )
     <process>
         swap >>command
@@ -120,3 +116,13 @@ PRIVATE>
     get-listener clear-output ;
 
 STARTUP-HOOK: set-default-cfg 
+
+! ------------------------------------------------------------------------------
+!                              "Shell" commands
+! ------------------------------------------------------------------------------
+: ls ( -- )
+    cwd directory-files . ;
+!    [ directory-files ] [ [ prepend-path normalize-path ] curry ] bi map ;
+
+: cat ( fname -- )
+    mishell-current-cfg get default-enc>> file-contents . ;
